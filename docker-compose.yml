@@ -31,6 +31,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tsu_bot}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tsu_bot}
       CONFIG_PATH: /app/config.yaml
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TELEGRAM_PROXY: ${TELEGRAM_PROXY:-}
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ./data:/app/data:ro   # нужен только для schedule.source: ics

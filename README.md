@@ -96,6 +96,24 @@ docker compose logs -f bot
 
 Образ собирался и запускался не в Docker, а в эквивалентной среде: проверено, что сервис стартует из набора файлов образа, читает конфиг и переменные окружения, подключается к Postgres и запускает планировщик. Сам `docker build` я проверить не мог.
 
+## Если бот не отвечает: Telegram недоступен
+
+В логах при этом `TelegramNetworkError: Request timeout error` на `get_me`, а расписание обновляется нормально. Сервис не падает, а повторяет подключение (10, 20, 40… до 120 секунд), планировщик работает. Но сообщения не дойдут, пока нет связи с `api.telegram.org`.
+
+Сначала выясните, где обрыв:
+
+```bash
+# 1. С самого сервера
+curl -m 10 -sS -o /dev/null -w "%{http_code}\n" https://api.telegram.org
+# 2. Из контейнера (в compose-образе curl нет, поэтому Python)
+docker compose run --rm --no-deps bot python -c "import urllib.request as u; print(u.urlopen('https://api.telegram.org', timeout=10).status)"
+```
+
+- Не работает ни там, ни там: доступ к Telegram режется на уровне сервера или провайдера. Нужен прокси или VPN для сервера: поднимите прокси и укажите в `.env` `TELEGRAM_PROXY=socks5://хост:порт` (или `http://хост:порт`). Прокси применяется только к Telegram, InTime и Open-Meteo идут напрямую. После правки: `docker compose up -d --force-recreate bot`.
+- Работает на сервере, но не в контейнере: проблема сети Docker. Попробуйте добавить сервису `bot` в `docker-compose.yml` `dns: [1.1.1.1, 8.8.8.8]` или `network_mode: host` (тогда `db` в `DATABASE_URL` придётся заменить на `localhost` и открыть порт БД).
+
+Токен тут ни при чём: при неверном токене ошибка другая (`Unauthorized`), а не таймаут.
+
 ## Что подкрутить под себя
 
 `config.yaml`:

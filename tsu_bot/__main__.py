@@ -7,7 +7,9 @@ from zoneinfo import ZoneInfo
 
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramNetworkError
 
 from .alerts import Alerter
 from .bot import build_dispatcher
@@ -20,6 +22,23 @@ from .schedule import ScheduleService
 from .weather import WeatherClient
 
 log = logging.getLogger("tsu_bot")
+
+
+async def poll_forever(dp, bot, *, first_delay=10.0, max_delay=120.0, sleep=asyncio.sleep) -> None:
+    """Long polling с повторами, если Telegram недоступен при старте.
+
+    Без этого процесс падал бы при каждой недоступности api.telegram.org, а контейнер
+    уходил бы в цикл перезапусков. Планировщик всё это время продолжает работать.
+    """
+    delay = first_delay
+    while True:
+        try:
+            await dp.start_polling(bot, close_bot_session=False)
+            return
+        except TelegramNetworkError as e:
+            log.warning("Telegram недоступен (%s). Повтор через %.0f с", e, delay)
+            await sleep(delay)
+            delay = min(delay * 2, max_delay)
 
 
 async def main() -> None:
@@ -35,8 +54,12 @@ async def main() -> None:
 
     schedule = ScheduleService(build_provider(settings.schedule, tz), db, settings.schedule, tz)
     weather = WeatherClient(settings.weather, tz)
+    proxy = settings.env.telegram_proxy.strip() or None
+    if proxy:
+        log.info("Telegram: используется прокси")
     bot = Bot(
         token=settings.env.telegram_bot_token,
+        session=AiohttpSession(proxy=proxy),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     notifier = Notifier(bot, settings, schedule, weather, tz)
@@ -50,7 +73,7 @@ async def main() -> None:
     startup_task = asyncio.create_task(planner.startup())  # не блокирует запуск бота
     log.info("Сервис запущен (источник расписания: %s)", settings.schedule.source)
     try:
-        await dp.start_polling(bot)
+        await poll_forever(dp, bot)
     finally:
         startup_task.cancel()
         planner.shutdown()

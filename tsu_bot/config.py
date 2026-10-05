@@ -20,6 +20,8 @@ class Env(BaseSettings):
     database_url: str
     config_path: str = "config.yaml"
     log_level: str = "INFO"
+    # Прокси только для Telegram: http://host:port или socks5://host:port
+    telegram_proxy: str = ""
 
 
 class ScheduleCfg(BaseModel):
