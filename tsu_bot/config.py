@@ -34,7 +34,7 @@ class ScheduleCfg(BaseModel):
     faculty_id: str = ""
     group_id: str = ""
     group_name: str = "932603"
-    subgroup: str = "б"
+    subgroup: str = "а"
     timezone: str = "Asia/Tomsk"
     refresh_minutes: int = Field(30, ge=5)
     days_ahead: int = Field(7, ge=2)
