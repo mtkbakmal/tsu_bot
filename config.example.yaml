@@ -1,0 +1,43 @@
+schedule:
+  # api: JSON API InTime (обновляется само, отдаёт тип занятия).
+  # ics: файл/ссылка с ICS-экспортом (без автообновления, без типа занятия).
+  source: api
+  ics_source: data/schedule.ics
+  api_base_url: https://intime.tsu.ru/api/web/v1
+  api_url_template: "{base}/schedule/group?id={group_id}&dateFrom={date_from}&dateTo={date_to}"
+  # Из ссылки intime.tsu.ru/schedule/group/<faculty_id>/<group_id>
+  faculty_id: 3d973de1-9bbc-11e7-813b-005056bc249c
+  group_id: 8d02325c-8b15-11f1-9de8-6cb3110a6d8e
+  group_name: "932603"
+  subgroup: "б"          # показываются общие пары и пары этой подгруппы
+  timezone: Asia/Tomsk
+  refresh_minutes: 30
+  days_ahead: 7
+
+commute:
+  walk_to_stop_min: 5     # общежитие № 7 -> остановка
+  bus_wait_min: 3
+  bus_ride_min: 15        # до главных ворот
+  walk_from_gate_min:     # от главных ворот до корпуса: {номер корпуса: минуты}
+    2: 5
+    14: 10                # спортзал: значение приблизительное, поправьте
+  default_walk_from_gate_min: 10   # для корпуса, которого нет в списке выше
+  safety_margin_min: 5    # запас на случай задержки
+  shower_min: 10
+  eating_min: 5
+  wake_extra_min: 15      # проснуться, одеться, собраться (в подъём входит вместе с душем и едой)
+
+notify:
+  # Утренняя сводка за N минут до первой пары дня.
+  morning_minutes_before_first_lesson: 60
+  leave_reminders_min: [15]   # «выходить через N мин»; «пора выходить» приходит всегда
+  evening_time: "21:00"       # время до подъёма на завтра
+  evening_send_when_no_lessons: true
+  tasks_retention_days: 7
+
+weather:
+  latitude: 56.4885
+  longitude: 84.9480
+  cache_minutes: 20
+  strong_wind_ms: 10
+  strong_gust_ms: 15
